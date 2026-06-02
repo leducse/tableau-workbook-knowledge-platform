@@ -58,6 +58,9 @@ The generation step is behind a `DocGenerator` interface. The default
 ```bash
 pip install boto3
 export DOC_GENERATOR=bedrock
+pip install -e ../libs/portfolio_aws   # shared Converse + Secrets Manager client
+export PORTFOLIO_SECRET_ARN=arn:aws:secretsmanager:...  # from CDK output after deploy
+# Or set BEDROCK_MODEL_ID only (uses default region from AWS profile)
 export AWS_REGION=us-east-1
 export BEDROCK_MODEL_ID=anthropic.claude-3-5-sonnet-20241022-v2:0
 python scripts/run_pipeline.py

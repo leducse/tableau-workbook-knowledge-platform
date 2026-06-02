@@ -1,9 +1,12 @@
 """Amazon Bedrock-backed generator (optional, guarded).
 
-This path is only used when ``DOC_GENERATOR=bedrock``. It imports ``boto3``
-lazily so the local demo never requires AWS dependencies or credentials. The
-two passes mirror the spec: draft from metadata, then refine the draft while
-fact-checking it against the same metadata.
+Uses ``portfolio_aws.BedrockConverse`` (Converse API) when ``PORTFOLIO_SECRET_ARN``
+or ``BEDROCK_MODEL_ID`` is set. Install the shared lib::
+
+    pip install -e ../../libs/portfolio_aws
+
+Set ``DOC_GENERATOR=bedrock``. Credentials come from your AWS profile or instance
+role — never from git.
 """
 
 from __future__ import annotations
@@ -13,31 +16,23 @@ import os
 
 from .base import DocGenerator
 
-_DEFAULT_MODEL = "anthropic.claude-3-5-sonnet-20241022-v2:0"
-
-_DRAFT_PROMPT = """You are a BI documentation writer. Using ONLY the workbook
-metadata JSON below, write clear markdown documentation describing the
-workbook's purpose, data sources, calculated fields (with formulas), parameters
-and dashboards. Do not invent field names or metrics.
-
-Workbook metadata:
-```json
-{metadata}
-```
-"""
-
-_REFINE_PROMPT = """You are a BI documentation editor. Refine the DRAFT markdown
-below so it is accurate and well structured. Use the metadata JSON as the source
-of truth: every calculated field and parameter name must match the metadata, and
-remove any claim not supported by it. Enforce these sections: Purpose,
-Metrics & Calculated Fields, Parameters, Data Sources, Dashboards & Dependencies.
+_DRAFT_SYSTEM = "You are a BI documentation writer. Use only the provided metadata."
+_DRAFT_USER = """Write markdown documentation for this Tableau workbook metadata.
+Include: Purpose, Metrics & Calculated Fields, Parameters, Data Sources, Dashboards.
+Do not invent fields.
 
 Metadata JSON:
-```json
 {metadata}
-```
+"""
 
-DRAFT:
+_REFINE_SYSTEM = "You are a BI documentation editor. Ground every claim in the metadata."
+_REFINE_USER = """Refine the draft. Remove unsupported claims. Keep sections:
+Purpose, Metrics & Calculated Fields, Parameters, Data Sources, Dashboards.
+
+Metadata:
+{metadata}
+
+Draft:
 {draft}
 """
 
@@ -45,36 +40,35 @@ DRAFT:
 class BedrockGenerator(DocGenerator):
     name = "bedrock"
 
-    def __init__(self, model_id: str | None = None, region: str | None = None) -> None:
-        self.model_id = model_id or os.environ.get("BEDROCK_MODEL_ID", _DEFAULT_MODEL)
-        self.region = region or os.environ.get("AWS_REGION", "us-east-1")
-        self._client = None
+    def __init__(self) -> None:
+        try:
+            from portfolio_aws import BedrockConverse, load_config
+        except ImportError as exc:
+            raise ImportError(
+                "Bedrock path requires portfolio_aws. From repo root run:\n"
+                "  pip install -e ../libs/portfolio_aws\n"
+                "Then set PORTFOLIO_SECRET_ARN (after CDK deploy) or BEDROCK_MODEL_ID."
+            ) from exc
+        self._load_config = load_config
+        self._BedrockConverse = BedrockConverse
+        self._llm = None
 
-    def _bedrock(self):
-        if self._client is None:
-            import boto3  # imported lazily; only required for the Bedrock path
-
-            self._client = boto3.client("bedrock-runtime", region_name=self.region)
-        return self._client
-
-    def _invoke(self, prompt: str) -> str:
-        body = {
-            "anthropic_version": "bedrock-2023-05-31",
-            "max_tokens": 4096,
-            "messages": [{"role": "user", "content": [{"type": "text", "text": prompt}]}],
-        }
-        response = self._bedrock().invoke_model(
-            modelId=self.model_id,
-            body=json.dumps(body),
-        )
-        payload = json.loads(response["body"].read())
-        return "".join(block.get("text", "") for block in payload.get("content", []))
+    def _client(self):
+        if self._llm is None:
+            config = self._load_config(require_secret=bool(os.environ.get("PORTFOLIO_SECRET_ARN")))
+            self._llm = self._BedrockConverse(config)
+        return self._llm
 
     def draft(self, metadata: dict) -> str:
-        return self._invoke(_DRAFT_PROMPT.format(metadata=json.dumps(metadata, indent=2)))
+        meta = json.dumps(metadata, indent=2)
+        return self._client().complete(
+            _DRAFT_USER.format(metadata=meta),
+            system=_DRAFT_SYSTEM,
+        ).text
 
     def refine(self, draft: str, metadata: dict) -> str:
-        prompt = _REFINE_PROMPT.format(
-            metadata=json.dumps(metadata, indent=2), draft=draft
-        )
-        return self._invoke(prompt)
+        meta = json.dumps(metadata, indent=2)
+        return self._client().complete(
+            _REFINE_USER.format(metadata=meta, draft=draft),
+            system=_REFINE_SYSTEM,
+        ).text
