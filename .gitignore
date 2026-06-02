@@ -11,5 +11,8 @@ infra/cdk/cdk.out/
 .DS_Store
 .idea/
 .vscode/
-outputs/
+
+# Packaged Tableau binaries (keep the small hand-authored sample .twb)
 *.twbx
+
+# Note: output/ demo artifacts ARE committed on purpose.

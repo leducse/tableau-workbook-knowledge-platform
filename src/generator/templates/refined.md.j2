@@ -1,0 +1,60 @@
+---
+workbook_id: {{ workbook_id }}
+title: {{ title }}
+generated_by: {{ backend }}
+data_sources: {{ data_sources | length }}
+calculated_fields: {{ calculated_fields | length }}
+parameters: {{ parameters | length }}
+---
+
+# {{ title }}
+
+Curated documentation for Tableau workbook `{{ workbook_id }}`. Every metric and
+business rule below is grounded in the parsed workbook metadata.
+
+## Purpose
+
+{{ title }} provides a single, field-trusted view of the metrics tracked in this
+workbook. It draws on {{ data_sources | length }} data source(s) and exposes
+{{ calculated_fields | length }} calculated field(s) across
+{{ worksheets | length }} worksheet(s).
+
+## Metrics & Calculated Fields
+{% if calculated_fields %}
+| Field | Formula | Used on |
+|-------|---------|---------|
+{% for calc in calculated_fields -%}
+| `{{ calc.name }}` | `{{ calc.formula }}` | {% if calc.used_on_sheets %}{{ calc.used_on_sheets | join(", ") }}{% else %}—{% endif %} |
+{% endfor %}
+{% else %}
+_No calculated fields defined._
+{% endif %}
+
+## Parameters
+{% if parameters %}
+| Parameter | Type | Default |
+|-----------|------|---------|
+{% for param in parameters -%}
+| `{{ param.name }}` | {{ param.type }} | {% if param.default is not none %}`{{ param.default }}`{% else %}—{% endif %} |
+{% endfor %}
+{% else %}
+_No parameters defined._
+{% endif %}
+
+## Data Sources
+
+{% for ds in data_sources %}
+- **{{ ds.name }}** (`{{ ds.connection }}`){{ (" — tables: " + (ds.tables | join(", "))) if ds.tables else "" }}
+{% endfor %}
+
+## Dashboards & Dependencies
+
+{% for db in dashboards %}
+- **{{ db.name }}** — sheets: {{ (db.sheets | join(", ")) if db.sheets else "none" }}
+{% endfor %}
+
+## Worksheets
+
+{% for ws in worksheets %}
+- {{ ws }}
+{% endfor %}

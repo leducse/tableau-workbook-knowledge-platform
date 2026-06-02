@@ -1,0 +1,133 @@
+<?xml version='1.0' encoding='utf-8' ?>
+<workbook source-build='2023.1.0' source-platform='mac' version='18.1' xmlns:user='http://www.tableausoftware.com/xml/user'>
+  <document-format-change-manifest>
+    <_.fcp.AnimationOnByDefault.true...AnimationOnByDefault />
+  </document-format-change-manifest>
+  <preferences>
+    <preference name='ui.encoding.shelf.height' value='24' />
+  </preferences>
+  <datasources>
+    <datasource caption='Parameters' inline='true' name='Parameters' version='18.1'>
+      <column caption='Region' datatype='string' name='[Parameter 1]' param-domain-type='list' role='measure' type='nominal' value='&quot;NA&quot;'>
+        <calculation class='tableau' formula='&quot;NA&quot;' />
+        <members>
+          <member value='&quot;NA&quot;' />
+          <member value='&quot;EMEA&quot;' />
+          <member value='&quot;APAC&quot;' />
+        </members>
+      </column>
+      <column caption='Target ARR' datatype='real' default-format='c&quot;$&quot;#,##0;-c&quot;$&quot;#,##0' name='[Parameter 2]' param-domain-type='range' role='measure' type='quantitative' value='1000000'>
+        <calculation class='tableau' formula='1000000' />
+        <range granularity='100000' max='5000000' min='0' />
+      </column>
+    </datasource>
+    <datasource caption='Sales' name='federated.0sales01' version='18.1'>
+      <connection class='federated'>
+        <named-connections>
+          <named-connection caption='analytics-redshift' name='redshift.0sales01'>
+            <connection authentication='username-password' class='redshift' dbname='analytics' odbc-connect-string-extras='' one-time-sql='' port='5439' schema='public' server='analytics-cluster.example-internal.com' username='svc_tableau_ro' />
+          </named-connection>
+        </named-connections>
+        <relation connection='redshift.0sales01' name='pipeline' table='[public].[pipeline]' type='table' />
+        <cols>
+          <map key='[arr]' value='[pipeline].[arr]' />
+          <map key='[opportunities]' value='[pipeline].[opportunities]' />
+          <map key='[won]' value='[pipeline].[won]' />
+          <map key='[region]' value='[pipeline].[region]' />
+          <map key='[close_date]' value='[pipeline].[close_date]' />
+        </cols>
+      </connection>
+      <column caption='ARR' datatype='real' name='[arr]' role='measure' type='quantitative' />
+      <column caption='Opportunities' datatype='integer' name='[opportunities]' role='measure' type='quantitative' />
+      <column caption='Won' datatype='integer' name='[won]' role='measure' type='quantitative' />
+      <column caption='Region' datatype='string' name='[region]' role='dimension' type='nominal' />
+      <column caption='Close Date' datatype='date' name='[close_date]' role='dimension' type='ordinal' />
+      <column caption='ARR YTD' datatype='real' name='[Calculation_arr_ytd]' role='measure' type='quantitative'>
+        <calculation class='tableau' formula='SUM([arr])' />
+      </column>
+      <column caption='Win Rate' datatype='real' default-format='p0.0%' name='[Calculation_win_rate]' role='measure' type='quantitative'>
+        <calculation class='tableau' formula='SUM([won]) / SUM([opportunities])' />
+      </column>
+      <column caption='Region In Scope' datatype='boolean' name='[Calculation_region_scope]' role='dimension' type='nominal'>
+        <calculation class='tableau' formula='[region] = [Parameters].[Parameter 1]' />
+      </column>
+    </datasource>
+  </datasources>
+  <worksheets>
+    <worksheet name='Summary'>
+      <table>
+        <view>
+          <datasources>
+            <datasource caption='Sales' name='federated.0sales01' />
+          </datasources>
+          <datasource-dependencies datasource='federated.0sales01'>
+            <column caption='ARR YTD' datatype='real' name='[Calculation_arr_ytd]' role='measure' type='quantitative'>
+              <calculation class='tableau' formula='SUM([arr])' />
+            </column>
+            <column-instance column='[Calculation_arr_ytd]' derivation='None' name='[usr:Calculation_arr_ytd:qk]' pivot='key' type='quantitative' />
+            <column caption='Win Rate' datatype='real' name='[Calculation_win_rate]' role='measure' type='quantitative'>
+              <calculation class='tableau' formula='SUM([won]) / SUM([opportunities])' />
+            </column>
+            <column-instance column='[Calculation_win_rate]' derivation='None' name='[usr:Calculation_win_rate:qk]' pivot='key' type='quantitative' />
+            <column-instance column='[region]' derivation='None' name='[none:region:nk]' pivot='key' type='nominal' />
+          </datasource-dependencies>
+        </view>
+      </table>
+    </worksheet>
+    <worksheet name='Trend'>
+      <table>
+        <view>
+          <datasources>
+            <datasource caption='Sales' name='federated.0sales01' />
+          </datasources>
+          <datasource-dependencies datasource='federated.0sales01'>
+            <column caption='ARR YTD' datatype='real' name='[Calculation_arr_ytd]' role='measure' type='quantitative'>
+              <calculation class='tableau' formula='SUM([arr])' />
+            </column>
+            <column-instance column='[Calculation_arr_ytd]' derivation='None' name='[usr:Calculation_arr_ytd:qk]' pivot='key' type='quantitative' />
+            <column-instance column='[close_date]' derivation='Year' name='[yr:close_date:ok]' pivot='key' type='ordinal' />
+          </datasource-dependencies>
+        </view>
+      </table>
+    </worksheet>
+    <worksheet name='Pipeline Detail'>
+      <table>
+        <view>
+          <datasources>
+            <datasource caption='Sales' name='federated.0sales01' />
+          </datasources>
+          <datasource-dependencies datasource='federated.0sales01'>
+            <column caption='Region In Scope' datatype='boolean' name='[Calculation_region_scope]' role='dimension' type='nominal'>
+              <calculation class='tableau' formula='[region] = [Parameters].[Parameter 1]' />
+            </column>
+            <column-instance column='[Calculation_region_scope]' derivation='None' name='[none:Calculation_region_scope:nk]' pivot='key' type='nominal' />
+            <column-instance column='[opportunities]' derivation='None' name='[sum:opportunities:qk]' pivot='key' type='quantitative' />
+            <column-instance column='[won]' derivation='None' name='[sum:won:qk]' pivot='key' type='quantitative' />
+          </datasource-dependencies>
+        </view>
+      </table>
+    </worksheet>
+  </worksheets>
+  <dashboards>
+    <dashboard name='Executive Summary'>
+      <style />
+      <size maxheight='800' maxwidth='1000' minheight='800' minwidth='1000' />
+      <zones>
+        <zone h='100000' id='3' type-v2='layout-basic' w='100000' x='0' y='0'>
+          <zone h='50000' id='4' name='Summary' w='100000' x='0' y='0' />
+          <zone h='50000' id='5' name='Trend' w='100000' x='0' y='50000' />
+        </zone>
+      </zones>
+    </dashboard>
+    <dashboard name='Pipeline Operations'>
+      <style />
+      <size maxheight='800' maxwidth='1000' minheight='800' minwidth='1000' />
+      <zones>
+        <zone h='100000' id='6' type-v2='layout-basic' w='100000' x='0' y='0'>
+          <zone h='100000' id='7' name='Pipeline Detail' w='100000' x='0' y='0' />
+        </zone>
+      </zones>
+    </dashboard>
+  </dashboards>
+  <windows source-height='30' />
+</workbook>

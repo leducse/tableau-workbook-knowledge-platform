@@ -1,0 +1,35 @@
+{
+  "workbook_id": "demo-workbook",
+  "passed": true,
+  "summary": {
+    "total": 4,
+    "passed": 4,
+    "failed": 0
+  },
+  "checks": [
+    {
+      "id": "required_sections",
+      "description": "Document contains the required structural sections.",
+      "passed": true,
+      "details": []
+    },
+    {
+      "id": "calc_coverage",
+      "description": "Every calculated field in metadata appears in the document.",
+      "passed": true,
+      "details": []
+    },
+    {
+      "id": "param_coverage",
+      "description": "Every parameter in metadata appears in the document.",
+      "passed": true,
+      "details": []
+    },
+    {
+      "id": "datasource_coverage",
+      "description": "Every data source in metadata appears in the document.",
+      "passed": true,
+      "details": []
+    }
+  ]
+}

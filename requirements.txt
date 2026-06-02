@@ -1,0 +1,6 @@
+# Core (required for the local demo — no AWS needed)
+Jinja2>=3.1,<4.0
+
+# Optional: only needed for the Amazon Bedrock generation path
+# (DOC_GENERATOR=bedrock). The local mock generator does NOT require this.
+# boto3>=1.34

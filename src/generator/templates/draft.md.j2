@@ -1,0 +1,44 @@
+# {{ title }}
+
+> Auto-generated draft documentation for Tableau workbook `{{ workbook_id }}`.
+
+## Overview
+
+This workbook surfaces {{ worksheets | length }} worksheet(s) across {{ dashboards | length }} dashboard(s), built on {{ data_sources | length }} data source(s). It is intended as the field-trusted reference for the metrics and business rules defined below.
+
+## Data Sources
+
+{% for ds in data_sources %}
+- **{{ ds.name }}** — connection: `{{ ds.connection }}`{{ (", tables: " + (ds.tables | join(", "))) if ds.tables else "" }}
+{% endfor %}
+
+## Calculated Fields
+
+{% if calculated_fields %}
+{% for calc in calculated_fields %}
+### {{ calc.name }}
+
+- **Formula:** `{{ calc.formula }}`
+- **Data source:** {{ calc.data_source }}
+- **Used on sheets:** {{ (calc.used_on_sheets | join(", ")) if calc.used_on_sheets else "_not referenced on any worksheet_" }}
+
+{% endfor %}
+{% else %}
+_No calculated fields defined._
+{% endif %}
+
+## Parameters
+
+{% if parameters %}
+{% for param in parameters %}
+- **{{ param.name }}** ({{ param.type }}){{ (" — default: `" + (param.default | string) + "`") if param.default is not none else "" }}
+{% endfor %}
+{% else %}
+_No parameters defined._
+{% endif %}
+
+## Dashboards
+
+{% for db in dashboards %}
+- **{{ db.name }}** — sheets: {{ (db.sheets | join(", ")) if db.sheets else "_none_" }}
+{% endfor %}

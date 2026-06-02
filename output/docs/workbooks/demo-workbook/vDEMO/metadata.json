@@ -1,0 +1,80 @@
+{
+  "workbook_id": "demo-workbook",
+  "title": "Demo Workbook",
+  "version": "18.1",
+  "data_sources": [
+    {
+      "name": "Sales",
+      "connection": "redshift",
+      "tables": [
+        "pipeline"
+      ],
+      "fields": [
+        "ARR",
+        "Opportunities",
+        "Won",
+        "Region",
+        "Close Date"
+      ]
+    }
+  ],
+  "calculated_fields": [
+    {
+      "name": "ARR YTD",
+      "formula": "SUM([arr])",
+      "data_source": "Sales",
+      "used_on_sheets": [
+        "Summary",
+        "Trend"
+      ]
+    },
+    {
+      "name": "Win Rate",
+      "formula": "SUM([won]) / SUM([opportunities])",
+      "data_source": "Sales",
+      "used_on_sheets": [
+        "Summary"
+      ]
+    },
+    {
+      "name": "Region In Scope",
+      "formula": "[region] = [Parameters].[Parameter 1]",
+      "data_source": "Sales",
+      "used_on_sheets": [
+        "Pipeline Detail"
+      ]
+    }
+  ],
+  "parameters": [
+    {
+      "name": "Region",
+      "type": "string",
+      "default": "NA"
+    },
+    {
+      "name": "Target ARR",
+      "type": "number",
+      "default": "1000000"
+    }
+  ],
+  "worksheets": [
+    "Summary",
+    "Trend",
+    "Pipeline Detail"
+  ],
+  "dashboards": [
+    {
+      "name": "Executive Summary",
+      "sheets": [
+        "Summary",
+        "Trend"
+      ]
+    },
+    {
+      "name": "Pipeline Operations",
+      "sheets": [
+        "Pipeline Detail"
+      ]
+    }
+  ]
+}
